@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Intelligence Media Gallery{% endblock %}
+
+{% block content %}
+<!-- Media Gallery Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-secondary border-primary">
+            <div class="card-header bg-primary d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-images me-2"></i>Intelligence Media Gallery
+                </h4>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="refreshMediaGallery()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="downloadMediaReport()">
+                        <i class="fas fa-download me-1"></i>Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-info text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-image fa-2x mb-2"></i>
+                <h3 id="totalImages" class="mb-0">0</h3>
+                <small>Images</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger">
+            <div class="card-body text-center">
+                <i class="fas fa-video fa-2x mb-2"></i>
+                <h3 id="totalVideos" class="mb-0">0</h3>
+                <small>Videos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success">
+            <div class="card-body text-center">
+                <i class="fas fa-file-pdf fa-2x mb-2"></i>
+                <h3 id="totalDocuments" class="mb-0">0</h3>
+                <small>Documents</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="fas fa-music fa-2x mb-2"></i>
+                <h3 id="totalAudio" class="mb-0">0</h3>
+                <small>Audio Files</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Type Tabs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-secondary border-info">
+            <div class="card-header bg-info text-dark">
+                <ul class="nav nav-tabs card-header-tabs" id="mediaTypeTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="images-tab" data-bs-toggle="tab" data-bs-target="#images" type="button" role="tab">
+                            <i class="fas fa-image me-1"></i>Images
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="videos-tab" data-bs-toggle="tab" data-bs-target="#videos" type="button" role="tab">
+                            <i class="fas fa-video me-1"></i>Videos
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+                            <i class="fas fa-file-pdf me-1"></i>Documents
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="audio-tab" data-bs-toggle="tab" data-bs-target="#audio" type="button" role="tab">
+                            <i class="fas fa-music me-1"></i>Audio
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <!-- Media Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control bg-dark text-light" id="mediaSearch" placeholder="Search media...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select bg-dark text-light" id="domainFilter">
+                            <option value="">All Domains</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select bg-dark text-light" id="engineFilter">
+                            <option value="">All Sources</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-info w-100" onclick="applyMediaFilters()">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="mediaTypeTabContent">
+                    <!-- Images Tab -->
+                    <div class="tab-pane fade show active" id="images" role="tabpanel">
+                        <div id="imagesGallery" class="row">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-info" role="status">
+                                    <span class="visually-hidden">Loading images...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Videos Tab -->
+                    <div class="tab-pane fade" id="videos" role="tabpanel">
+                        <div id="videosGallery" class="row">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-danger" role="status">
+                                    <span class="visually-hidden">Loading videos...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Documents Tab -->
+                    <div class="tab-pane fade" id="documents" role="tabpanel">
+                        <div id="documentsGallery" class="row">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">Loading documents...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Audio Tab -->
+                    <div class="tab-pane fade" id="audio" role="tabpanel">
+                        <div id="audioGallery" class="row">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-warning" role="status">
+                                    <span class="visually-hidden">Loading audio...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Media Detail Modal -->
+<div class="modal fade" id="mediaDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mediaDetailTitle">Media Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="mediaDetailBody">
+                <!-- Media details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="openMediaUrl">Open Original</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/media-gallery.js') }}"></script>
+{% endblock %}

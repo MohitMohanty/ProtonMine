@@ -367,8 +367,246 @@ def osint_intelligence():
 
 @app.route('/neural-graph')
 def neural_graph():
-    """Enhanced neural network visualization"""
-    return render_template('neural_graph.html')
+    """Neural network visualization page (restored)"""
+    return render_template('neural-graph.html')  # Keep original template name
+
+@app.route('/api/graph-data')
+def get_graph_data():
+    """Get data for neural network graph (original functionality)"""
+    # Query database for recent documents (keep original logic)
+    recent_docs = enhanced_system.db.find_documents({})
+    
+    nodes = []
+    links = []
+    
+    # Create nodes for domains, keywords, and documents (original logic)
+    domain_nodes = {}
+    keyword_nodes = {}
+    
+    for doc in recent_docs[-50:]:  # Last 50 documents
+        doc_id = doc.get('id', str(uuid.uuid4()))
+        domain = doc.get('domain', 'unknown')
+        keywords = doc.get('keywords', []) or doc.get('search_metadata', {}).get('keywords', [])
+        
+        # Document node (original structure)
+        nodes.append({
+            'id': doc_id,
+            'type': 'document',
+            'label': doc.get('title', 'Unknown')[:30],
+            'url': doc.get('url', ''),
+            'trust_score': doc.get('metadata', {}).get('trust_score', 0),
+            'media_count': sum(doc.get('metadata', {}).get('media_count', {}).values()) if doc.get('metadata', {}).get('media_count') else 0
+        })
+        
+        # Domain node (original logic)
+        if domain not in domain_nodes:
+            domain_nodes[domain] = {
+                'id': f'domain_{domain}',
+                'type': 'domain',
+                'label': domain,
+                'count': 0
+            }
+        domain_nodes[domain]['count'] += 1
+        
+        # Link document to domain (original structure)
+        links.append({
+            'source': doc_id,
+            'target': f'domain_{domain}',
+            'type': 'belongs_to'
+        })
+        
+        # Keyword nodes and links (original logic)
+        for keyword in keywords:
+            keyword_id = f'keyword_{keyword}'
+            if keyword not in keyword_nodes:
+                keyword_nodes[keyword] = {
+                    'id': keyword_id,
+                    'type': 'keyword',
+                    'label': keyword,
+                    'count': 0
+                }
+            keyword_nodes[keyword]['count'] += 1
+            
+            # Link document to keyword
+            links.append({
+                'source': doc_id,
+                'target': keyword_id,
+                'type': 'tagged_with'
+            })
+    
+    # Add domain and keyword nodes
+    nodes.extend(domain_nodes.values())
+    nodes.extend(keyword_nodes.values())
+    
+    return jsonify({'nodes': nodes, 'links': links})
+
+@app.route('/media-gallery')
+def media_gallery():
+    """Media gallery page showing all discovered media"""
+    return render_template('media_gallery.html')
+
+@app.route('/api/media-data')
+def get_media_data():
+    """Get media data for gallery"""
+    try:
+        # Query database for documents with media
+        recent_docs = enhanced_system.db.find_documents({})
+        
+        media_items = {
+            'images': [],
+            'videos': [],
+            'documents': [],
+            'audio': []
+        }
+        
+        for doc in recent_docs:
+            # Extract media from traditional scraping results
+            media = doc.get('media', {})
+            
+            # Process images
+            for img in media.get('images', []):
+                media_items['images'].append({
+                    'url': img.get('url', ''),
+                    'alt': img.get('alt_text', img.get('alt', '')),
+                    'title': img.get('title', ''),
+                    'source_url': doc.get('url', ''),
+                    'source_title': doc.get('title', 'Unknown'),
+                    'domain': doc.get('domain', 'unknown'),
+                    'discovery_date': doc.get('inserted_at', ''),
+                    'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                })
+            
+            # Process videos
+            for video in media.get('videos', []):
+                if isinstance(video, dict):
+                    media_items['videos'].append({
+                        'url': video.get('url', ''),
+                        'title': video.get('title', ''),
+                        'type': video.get('type', 'video'),
+                        'platform': video.get('platform', 'unknown'),
+                        'thumbnail': video.get('thumbnail', ''),
+                        'source_url': doc.get('url', ''),
+                        'source_title': doc.get('title', 'Unknown'),
+                        'domain': doc.get('domain', 'unknown'),
+                        'discovery_date': doc.get('inserted_at', ''),
+                        'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                    })
+                else:
+                    # Handle string URLs
+                    media_items['videos'].append({
+                        'url': video,
+                        'title': 'Video',
+                        'type': 'video',
+                        'platform': 'unknown',
+                        'source_url': doc.get('url', ''),
+                        'source_title': doc.get('title', 'Unknown'),
+                        'domain': doc.get('domain', 'unknown'),
+                        'discovery_date': doc.get('inserted_at', ''),
+                        'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                    })
+            
+            # Process documents
+            for document in media.get('documents', []):
+                if isinstance(document, dict):
+                    media_items['documents'].append({
+                        'url': document.get('url', ''),
+                        'filename': document.get('filename', document.get('text', 'Document')),
+                        'type': document.get('type', 'pdf'),
+                        'file_size': document.get('file_size', ''),
+                        'source_url': doc.get('url', ''),
+                        'source_title': doc.get('title', 'Unknown'),
+                        'domain': doc.get('domain', 'unknown'),
+                        'discovery_date': doc.get('inserted_at', ''),
+                        'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                    })
+                else:
+                    # Handle string URLs
+                    media_items['documents'].append({
+                        'url': document,
+                        'filename': 'Document',
+                        'type': 'pdf',
+                        'source_url': doc.get('url', ''),
+                        'source_title': doc.get('title', 'Unknown'),
+                        'domain': doc.get('domain', 'unknown'),
+                        'discovery_date': doc.get('inserted_at', ''),
+                        'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                    })
+            
+            # Process audio
+            for audio in media.get('audio', []):
+                if isinstance(audio, dict):
+                    media_items['audio'].append({
+                        'url': audio.get('url', ''),
+                        'title': audio.get('title', 'Audio'),
+                        'type': audio.get('type', 'audio'),
+                        'source_url': doc.get('url', ''),
+                        'source_title': doc.get('title', 'Unknown'),
+                        'domain': doc.get('domain', 'unknown'),
+                        'discovery_date': doc.get('inserted_at', ''),
+                        'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                    })
+                else:
+                    # Handle string URLs
+                    media_items['audio'].append({
+                        'url': audio,
+                        'title': 'Audio',
+                        'type': 'audio',
+                        'source_url': doc.get('url', ''),
+                        'source_title': doc.get('title', 'Unknown'),
+                        'domain': doc.get('domain', 'unknown'),
+                        'discovery_date': doc.get('inserted_at', ''),
+                        'search_engine': doc.get('search_metadata', {}).get('search_engine', 'unknown')
+                    })
+        
+        # Limit results and sort by discovery date
+        for media_type in media_items:
+            media_items[media_type] = sorted(
+                media_items[media_type], 
+                key=lambda x: x.get('discovery_date', ''), 
+                reverse=True
+            )[:100]  # Limit to 100 items per type
+        
+        return jsonify(media_items)
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'images': [], 'videos': [], 'documents': [], 'audio': []})
+
+@app.route('/api/media-stats')
+def get_media_stats():
+    """Get media statistics"""
+    try:
+        response = get_media_data()
+        media_data = response.get_json()
+        
+        stats = {
+            'total_images': len(media_data.get('images', [])),
+            'total_videos': len(media_data.get('videos', [])),
+            'total_documents': len(media_data.get('documents', [])),
+            'total_audio': len(media_data.get('audio', [])),
+            'total_media': (
+                len(media_data.get('images', [])) +
+                len(media_data.get('videos', [])) +
+                len(media_data.get('documents', [])) +
+                len(media_data.get('audio', []))
+            ),
+            'domains': len(set([
+                item.get('domain', 'unknown') 
+                for media_list in media_data.values() 
+                if isinstance(media_list, list)
+                for item in media_list
+            ])),
+            'search_engines': len(set([
+                item.get('search_engine', 'unknown') 
+                for media_list in media_data.values() 
+                if isinstance(media_list, list)
+                for item in media_list
+            ]))
+        }
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 @app.route('/api/start-comprehensive-search', methods=['POST'])
 def start_comprehensive_search():
