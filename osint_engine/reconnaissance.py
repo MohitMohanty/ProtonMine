@@ -1,16 +1,20 @@
 import subprocess
 import json
 import time
+import random
 import requests
 from typing import List, Dict, Set
 import dns.resolver
 import whois
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 import builtwith
 from waybackpy import WaybackMachineCDXServerAPI
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import undetected_chromedriver as uc
+from bs4 import BeautifulSoup
+import concurrent.futures
+import threading
 
 class OSINTReconEngine:
     def __init__(self):
@@ -19,7 +23,7 @@ class OSINTReconEngine:
         self.discovered_urls = set()
         self.intelligence_data = []
         
-        # Setup Selenium with stealth capabilities
+        # Setup Selenium with error handling
         self.setup_selenium()
         
         # Indian Navy known domains for reconnaissance
@@ -33,35 +37,35 @@ class OSINTReconEngine:
         ]
     
     def setup_selenium(self):
-        """Setup undetected Chrome driver for advanced scraping"""
-        options = uc.ChromeOptions()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option('useAutomationExtension', False)
-        
-        self.driver = uc.Chrome(options=options)
-        self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        """Setup Chrome driver with proper error handling"""
+        try:
+            options = uc.ChromeOptions()
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument('--disable-gpu')
+            options.add_argument('--disable-web-security')
+            options.add_argument('--disable-images')
+            options.add_argument('--disable-javascript')
+            
+            # Simple user agent
+            options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+            options.add_argument('--window-size=1920,1080')
+            
+            self.driver = uc.Chrome(options=options)
+            print("✅ Selenium Chrome driver initialized successfully")
+            
+        except Exception as e:
+            print(f"❌ Selenium setup failed: {e}")
+            print("🔄 Continuing with requests-only mode...")
+            self.driver = None
     
     def comprehensive_subdomain_enumeration(self, domain: str) -> Set[str]:
-        """Advanced subdomain discovery using multiple OSINT techniques"""
+        """Enhanced subdomain discovery using multiple working methods"""
         subdomains = set()
         
         print(f"🔍 Enumerating subdomains for: {domain}")
         
-        # Method 1: Sublist3r
-        try:
-            import sublist3r
-            result = sublist3r.main(domain, 40, None, ports=None, silent=True, verbose=False,
-                                  enable_bruteforce=False, engines=None)
-            if result:
-                subdomains.update(result)
-                print(f"✅ Sublist3r found {len(result)} subdomains")
-        except Exception as e:
-            print(f"⚠️ Sublist3r error: {e}")
-        
-        # Method 2: Certificate Transparency Logs
+        # Method 1: Certificate Transparency (Most Reliable)
         try:
             ct_subdomains = self.certificate_transparency_search(domain)
             subdomains.update(ct_subdomains)
@@ -69,7 +73,7 @@ class OSINTReconEngine:
         except Exception as e:
             print(f"⚠️ CT search error: {e}")
         
-        # Method 3: DNS Brute Force
+        # Method 2: DNS Brute Force (Always Works)
         try:
             brute_subdomains = self.dns_bruteforce(domain)
             subdomains.update(brute_subdomains)
@@ -77,7 +81,7 @@ class OSINTReconEngine:
         except Exception as e:
             print(f"⚠️ DNS brute force error: {e}")
         
-        # Method 4: Wayback Machine URLs
+        # Method 3: Wayback Machine (Reliable)
         try:
             wayback_subdomains = self.wayback_machine_search(domain)
             subdomains.update(wayback_subdomains)
@@ -85,57 +89,119 @@ class OSINTReconEngine:
         except Exception as e:
             print(f"⚠️ Wayback search error: {e}")
         
+        # Method 4: Alternative API-based enumeration
+        try:
+            api_subdomains = self.alternative_subdomain_search(domain)
+            subdomains.update(api_subdomains)
+            print(f"✅ API search found {len(api_subdomains)} subdomains")
+        except Exception as e:
+            print(f"⚠️ API search error: {e}")
+        
         return subdomains
     
     def certificate_transparency_search(self, domain: str) -> Set[str]:
-        """Search Certificate Transparency logs for subdomains"""
+        """Enhanced Certificate Transparency search with multiple sources"""
         subdomains = set()
         
-        # crt.sh API
+        # Source 1: crt.sh
         try:
             url = f"https://crt.sh/?q=%25.{domain}&output=json"
-            response = requests.get(url, timeout=30)
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            response = requests.get(url, timeout=30, headers=headers)
+            
             if response.status_code == 200:
                 certificates = response.json()
                 for cert in certificates:
                     name_value = cert.get('name_value', '')
                     for subdomain in name_value.split('\n'):
-                        subdomain = subdomain.strip()
-                        if subdomain and domain in subdomain:
+                        subdomain = subdomain.strip().replace('*.', '')
+                        if subdomain and domain in subdomain and not subdomain.startswith('.'):
                             subdomains.add(subdomain)
         except Exception as e:
             print(f"crt.sh search failed: {e}")
         
+        # Source 2: Alternative CT log source
+        try:
+            url = f"https://certspotter.com/api/v1/issuances?domain={domain}&include_subdomains=true&expand=dns_names"
+            response = requests.get(url, timeout=20)
+            
+            if response.status_code == 200:
+                data = response.json()
+                for item in data:
+                    dns_names = item.get('dns_names', [])
+                    for name in dns_names:
+                        if domain in name and not name.startswith('*.'):
+                            subdomains.add(name)
+        except Exception as e:
+            print(f"Certspotter search failed: {e}")
+        
+        return subdomains
+    
+    def alternative_subdomain_search(self, domain: str) -> Set[str]:
+        """Alternative subdomain enumeration using HackerTarget API"""
+        subdomains = set()
+        
+        try:
+            # HackerTarget API (Free and reliable)
+            url = f"https://api.hackertarget.com/hostsearch/?q={domain}"
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code == 200:
+                lines = response.text.strip().split('\n')
+                for line in lines:
+                    if ',' in line:  # Format: subdomain,ip
+                        subdomain = line.split(',')[0]
+                        if domain in subdomain:
+                            subdomains.add(subdomain)
+        except Exception as e:
+            print(f"HackerTarget API failed: {e}")
+        
         return subdomains
     
     def dns_bruteforce(self, domain: str) -> Set[str]:
-        """DNS brute force using common subdomain wordlist"""
+        """Enhanced DNS brute force with Indian Navy specific wordlist"""
         subdomains = set()
         
-        # Common Indian government/military subdomains
-        wordlist = [
+        # Extended Indian Navy/Government wordlist
+        naval_wordlist = [
+            # Basic
             'www', 'mail', 'ftp', 'admin', 'test', 'dev', 'staging', 'portal',
-            'secure', 'login', 'api', 'cdn', 'static', 'media', 'assets',
+            # Naval specific
+            'naval', 'navy', 'fleet', 'command', 'operations', 'ops', 'base',
+            'station', 'dockyard', 'shipyard', 'submarine', 'vessel', 'ship',
+            # Military/Defense
+            'defence', 'defense', 'military', 'security', 'intel', 'logistics',
+            'supply', 'stores', 'weapons', 'armament', 'communications', 'signals',
+            # Indian Government
             'recruitment', 'career', 'jobs', 'training', 'academy', 'college',
-            'naval', 'navy', 'defence', 'defense', 'military', 'ops', 'operations',
-            'command', 'fleet', 'base', 'station', 'ship', 'vessel', 'submarine',
-            'logistics', 'supply', 'stores', 'workshop', 'dockyard', 'shipyard',
-            'communications', 'signals', 'radar', 'sonar', 'weapons', 'armament'
+            'tender', 'procurement', 'notification', 'circular', 'order',
+            # Technical
+            'api', 'cdn', 'static', 'media', 'assets', 'files', 'docs', 'archive',
+            'login', 'secure', 'intranet', 'extranet', 'vpn', 'remote'
         ]
         
-        resolver = dns.resolver.Resolver()
-        resolver.timeout = 5
-        resolver.lifetime = 5
-        
-        for subdomain in wordlist:
+        def check_subdomain(subdomain):
             try:
                 full_domain = f"{subdomain}.{domain}"
+                resolver = dns.resolver.Resolver()
+                resolver.timeout = 3
+                resolver.lifetime = 3
                 resolver.resolve(full_domain, 'A')
-                subdomains.add(full_domain)
-                print(f"  ✅ Found: {full_domain}")
-                time.sleep(0.1)  # Rate limiting
+                return full_domain
             except:
-                pass
+                return None
+        
+        print(f"  🔍 Testing {len(naval_wordlist)} subdomains...")
+        
+        # Use threading for faster enumeration
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_subdomain = {executor.submit(check_subdomain, sub): sub for sub in naval_wordlist}
+            
+            for future in concurrent.futures.as_completed(future_to_subdomain):
+                result = future.result()
+                if result:
+                    subdomains.add(result)
+                    print(f"    ✅ Found: {result}")
         
         return subdomains
     
@@ -150,7 +216,7 @@ class OSINTReconEngine:
             for snapshot in snapshots[:100]:  # Limit to first 100
                 url = snapshot.original
                 parsed = urlparse(url)
-                if parsed.netloc:
+                if parsed.netloc and domain in parsed.netloc:
                     subdomains.add(parsed.netloc)
         except Exception as e:
             print(f"Wayback Machine search failed: {e}")
@@ -158,7 +224,20 @@ class OSINTReconEngine:
         return subdomains
     
     def advanced_web_scraping(self, url: str) -> Dict:
-        """Advanced web scraping with multiple fallback methods"""
+        """Multi-method web scraping with robust fallbacks"""
+        
+        # Try Selenium first if available
+        if hasattr(self, 'driver') and self.driver is not None:
+            try:
+                return self.scrape_with_selenium(url)
+            except Exception as e:
+                print(f"⚠️ Selenium failed for {url}: {e}")
+        
+        # Fallback to requests
+        return self.scrape_with_requests(url)
+    
+    def scrape_with_selenium(self, url: str) -> Dict:
+        """Selenium-based web scraping"""
         data = {
             'url': url,
             'title': '',
@@ -166,12 +245,10 @@ class OSINTReconEngine:
             'links': [],
             'media': {'images': [], 'documents': [], 'videos': []},
             'metadata': {},
-            'technology_stack': {},
-            'whois_data': {}
+            'scraped_successfully': False
         }
         
         try:
-            # Method 1: Selenium with stealth
             print(f"🌐 Scraping with Selenium: {url}")
             self.driver.get(url)
             time.sleep(3)  # Wait for page load
@@ -179,6 +256,7 @@ class OSINTReconEngine:
             # Extract basic information
             data['title'] = self.driver.title
             data['content'] = self.driver.find_element("tag name", "body").text[:5000]
+            data['scraped_successfully'] = True
             
             # Extract links
             links = self.driver.find_elements("tag name", "a")
@@ -202,53 +280,102 @@ class OSINTReconEngine:
                     })
             
             # Extract document links
+            document_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
             for link in data['links']:
-                url_lower = link['url'].lower()
-                if any(ext in url_lower for ext in ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt']):
+                if any(ext in link['url'].lower() for ext in document_extensions):
                     data['media']['documents'].append(link)
             
-            print(f"✅ Successfully scraped: {len(data['content'])} chars, {len(data['links'])} links")
+            print(f"✅ Selenium scraped: {len(data['content'])} chars, {len(data['links'])} links")
             
         except Exception as e:
             print(f"❌ Selenium scraping failed for {url}: {e}")
-            
-            # Fallback to requests
-            try:
-                print(f"🔄 Fallback to requests: {url}")
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-                response = requests.get(url, headers=headers, timeout=10)
-                response.raise_for_status()
-                
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                data['title'] = soup.title.string if soup.title else ''
-                data['content'] = soup.get_text()[:5000]
-                
-                print(f"✅ Fallback successful: {len(data['content'])} chars")
-                
-            except Exception as e2:
-                print(f"❌ Fallback also failed: {e2}")
-        
-        # Get technology stack
-        try:
-            parsed_domain = urlparse(url).netloc
-            data['technology_stack'] = builtwith.parse(url)
-            print(f"📊 Technology stack detected for {parsed_domain}")
-        except:
-            pass
-        
-        # Get WHOIS data
-        try:
-            parsed_domain = urlparse(url).netloc
-            data['whois_data'] = dict(whois.whois(parsed_domain))
-            print(f"📋 WHOIS data retrieved for {parsed_domain}")
-        except:
-            pass
         
         return data
+    
+    def scrape_with_requests(self, url: str) -> Dict:
+        """Reliable requests-based scraping"""
+        data = {
+            'url': url,
+            'title': '',
+            'content': '',
+            'links': [],
+            'media': {'images': [], 'documents': [], 'videos': []},
+            'metadata': {},
+            'scraped_successfully': False
+        }
+        
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+            }
+            
+            response = requests.get(url, headers=headers, timeout=15, verify=False)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Extract basic content
+            data['title'] = soup.title.string if soup.title else ''
+            data['content'] = soup.get_text()[:5000]
+            data['scraped_successfully'] = True
+            
+            # Extract links
+            for link in soup.find_all('a', href=True)[:50]:
+                href = link.get('href')
+                if href and (href.startswith('http') or href.startswith('/')):
+                    if href.startswith('/'):
+                        href = urljoin(url, href)
+                    data['links'].append({
+                        'url': href,
+                        'text': link.get_text().strip()[:100]
+                    })
+            
+            # Extract images
+            for img in soup.find_all('img', src=True)[:20]:
+                src = img.get('src')
+                if src:
+                    if src.startswith('/'):
+                        src = urljoin(url, src)
+                    data['media']['images'].append({
+                        'url': src,
+                        'alt': img.get('alt', ''),
+                        'title': img.get('title', '')
+                    })
+            
+            # Extract documents
+            document_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
+            for link in data['links']:
+                if any(ext in link['url'].lower() for ext in document_extensions):
+                    data['media']['documents'].append(link)
+            
+            print(f"✅ Scraped: {len(data['content'])} chars, {len(data['links'])} links, {len(data['media']['documents'])} docs")
+            
+        except Exception as e:
+            print(f"❌ Failed to scrape {url}: {e}")
+        
+        return data
+    
+    def get_technology_stack(self, url: str) -> Dict:
+        """Get technology stack information"""
+        try:
+            return builtwith.parse(url)
+        except Exception as e:
+            print(f"Technology detection failed for {url}: {e}")
+            return {}
+    
+    def get_whois_data(self, url: str) -> Dict:
+        """Get WHOIS information"""
+        try:
+            parsed_domain = urlparse(url).netloc
+            return dict(whois.whois(parsed_domain))
+        except Exception as e:
+            print(f"WHOIS lookup failed for {url}: {e}")
+            return {}
     
     def indian_navy_focused_reconnaissance(self) -> Dict:
         """Comprehensive OSINT reconnaissance focused on Indian Navy"""
@@ -274,17 +401,23 @@ class OSINTReconEngine:
         all_targets = list(results['domains_discovered']) + list(results['subdomains_discovered'])
         
         print(f"\n🌐 Phase 2: Deep scraping {len(all_targets)} targets...")
-        for target in all_targets[:20]:  # Limit to first 20 to avoid overwhelming
+        for i, target in enumerate(all_targets[:20]):  # Limit to first 20 to avoid overwhelming
+            print(f"[{i+1}/{min(20, len(all_targets))}] Processing: {target}")
+            
             if not target.startswith('http'):
                 target = f"https://{target}"
             
             scraped_data = self.advanced_web_scraping(target)
-            if scraped_data['content']:
+            if scraped_data['scraped_successfully']:
                 results['urls_scraped'].append(scraped_data)
                 
                 # Collect media and documents
                 results['media_found'].extend(scraped_data['media']['images'])
                 results['documents_found'].extend(scraped_data['media']['documents'])
+                
+                # Get additional metadata
+                tech_stack = self.get_technology_stack(target)
+                whois_data = self.get_whois_data(target)
                 
                 # Store intelligence
                 intelligence_item = {
@@ -294,10 +427,15 @@ class OSINTReconEngine:
                     'links_count': len(scraped_data['links']),
                     'media_count': len(scraped_data['media']['images']),
                     'documents_count': len(scraped_data['media']['documents']),
-                    'technology_stack': scraped_data['technology_stack'],
+                    'technology_stack': tech_stack,
+                    'whois_data': whois_data,
                     'timestamp': time.time()
                 }
                 results['intelligence_gathered'].append(intelligence_item)
+                
+                print(f"✅ Intelligence gathered from {target}")
+            else:
+                print(f"❌ Failed to gather intelligence from {target}")
             
             time.sleep(2)  # Rate limiting
         
@@ -309,5 +447,8 @@ class OSINTReconEngine:
     
     def __del__(self):
         """Cleanup Selenium driver"""
-        if hasattr(self, 'driver'):
-            self.driver.quit()
+        if hasattr(self, 'driver') and self.driver:
+            try:
+                self.driver.quit()
+            except:
+                pass

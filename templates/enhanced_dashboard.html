@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Enhanced Intelligence Dashboard with OSINT{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Enhanced Control Panel -->
+    <div class="col-lg-4">
+        <div class="card bg-secondary border-primary mb-3">
+            <div class="card-header bg-primary">
+                <h5 class="mb-0">
+                    <i class="fas fa-satellite-dish me-2"></i>Intelligence Gathering Center
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="enhancedSearchForm">
+                    <div class="mb-3">
+                        <label class="form-label">Intelligence Keywords</label>
+                        <textarea class="form-control bg-dark text-light border-info" 
+                                  id="keywords" rows="4" 
+                                  placeholder="indian navy, naval ships, INS, submarines, procurement">indian navy
+naval ships
+INS ships
+submarines
+naval base
+procurement</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Search Engines</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="duckduckgo" id="engine1" checked>
+                            <label class="form-check-label" for="engine1">
+                                <i class="fas fa-search me-1"></i>DuckDuckGo
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="google_dork" id="engine2">
+                            <label class="form-check-label" for="engine2">
+                                <i class="fab fa-google me-1"></i>Google Dorking
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="twitter_dork" id="engine3">
+                            <label class="form-check-label" for="engine3">
+                                <i class="fab fa-twitter me-1"></i>Twitter Intelligence
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="youtube_dork" id="engine4">
+                            <label class="form-check-label" for="engine4">
+                                <i class="fab fa-youtube me-1"></i>YouTube Intelligence
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="includeOSINT" checked>
+                            <label class="form-check-label" for="includeOSINT">
+                                <i class="fas fa-network-wired me-1"></i>
+                                <strong>Enable OSINT Reconnaissance</strong>
+                                <small class="d-block text-muted">Includes subdomain enumeration, certificate transparency, and deep intelligence gathering</small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-satellite me-2"></i>Launch Intelligence Operation
+                    </button>
+                    
+                    <button type="button" class="btn btn-info w-100" onclick="window.open('/osint-intelligence', '_blank')">
+                        <i class="fas fa-chart-network me-2"></i>View OSINT Intelligence
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Enhanced Real-time Stats -->
+        <div class="card bg-secondary border-success">
+            <div class="card-header bg-success">
+                <h6 class="mb-0">
+                    <i class="fas fa-analytics me-2"></i>Intelligence Metrics
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="stat-item bg-primary">
+                            <div class="stat-value" id="totalDocuments">0</div>
+                            <div class="stat-label">Documents</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-item bg-danger">
+                            <div class="stat-value" id="osintIntelligence">0</div>
+                            <div class="stat-label">OSINT Intel</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-item bg-warning">
+                            <div class="stat-value" id="subdomainsFound">0</div>
+                            <div class="stat-label">Subdomains</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="stat-item bg-info">
+                            <div class="stat-value" id="totalImages">0</div>
+                            <div class="stat-label">Media Files</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Intelligence Types Breakdown -->
+                <div class="mt-3">
+                    <h6 class="text-center mb-2">Intelligence Sources</h6>
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 40%" id="traditionalProgress"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: 35%" id="osintProgress"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: 25%" id="socialProgress"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span><i class="fas fa-circle text-primary"></i> Traditional</span>
+                        <span><i class="fas fa-circle text-danger"></i> OSINT</span>
+                        <span><i class="fas fa-circle text-warning"></i> Social</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Activity Feed -->
+    <div class="col-lg-8">
+        <div class="card bg-secondary border-info mb-3">
+            <div class="card-header bg-info text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-satellite-dish me-2"></i>Live Intelligence Feed
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="feedFilter" id="allFeed" autocomplete="off" checked>
+                    <label class="btn btn-outline-light" for="allFeed">All</label>
+                    
+                    <input type="radio" class="btn-check" name="feedFilter" id="osintFeed" autocomplete="off">
+                    <label class="btn btn-outline-light" for="osintFeed">OSINT</label>
+                    
+                    <input type="radio" class="btn-check" name="feedFilter" id="socialFeed" autocomplete="off">
+                    <label class="btn btn-outline-light" for="socialFeed">Social</label>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="enhancedActivityFeed" class="activity-feed" style="height: 450px; overflow-y: auto;">
+                    <div class="text-center p-4 text-muted">
+                        <i class="fas fa-satellite-dish fa-3x mb-3"></i>
+                        <p>Launch intelligence operation to see real-time updates</p>
+                        <small>Enhanced with OSINT reconnaissance capabilities</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Intelligence Phases Progress -->
+        <div class="card bg-secondary border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-tasks me-2"></i>Operation Progress
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="operationProgress">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p>No active intelligence operations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Intelligence Discoveries Dashboard -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-secondary border-primary">
+            <div class="card-header bg-primary d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-eye me-2"></i>Recent Intelligence Discoveries
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="exportIntelligence()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="window.open('/neural-graph', '_blank')">
+                        <i class="fas fa-project-diagram me-1"></i>Graph View
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="intelligenceDiscoveries" class="row">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/enhanced-dashboard.js') }}"></script>
+{% endblock %}

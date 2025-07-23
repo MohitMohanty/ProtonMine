@@ -1,0 +1,155 @@
+/* Enhanced Dashboard Styles */
+.intelligence-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.intelligence-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+}
+
+.stat-card {
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: white;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    opacity: 0.9;
+    color: white;
+}
+
+.activity-item {
+    margin-bottom: 8px;
+    animation: slideInLeft 0.5s ease-out;
+}
+
+.activity-item.osint {
+    border-left: 4px solid #dc3545;
+}
+
+.activity-item.social {
+    border-left: 4px solid #ffc107;
+}
+
+.activity-item.success {
+    border-left: 4px solid #28a745;
+}
+
+.activity-item.info {
+    border-left: 4px solid #17a2b8;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #28a745, #ffc107, #dc3545);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -37px;
+    top: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid #1a1a1a;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Enhanced progress indicators */
+.progress {
+    height: 6px;
+    border-radius: 3px;
+}
+
+.progress-bar {
+    border-radius: 3px;
+}
+
+/* Intelligence type badges */
+.intel-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.intel-badge.osint {
+    background: #dc3545;
+    color: white;
+}
+
+.intel-badge.social {
+    background: #ffc107;
+    color: #212529;
+}
+
+.intel-badge.traditional {
+    background: #007bff;
+    color: white;
+}
+
+/* Operation phase indicator */
+.phase-indicator {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.phase-indicator i {
+    margin-bottom: 15px;
+}
+
+/* Enhanced hover effects */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
