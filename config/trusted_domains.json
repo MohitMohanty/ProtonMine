@@ -1,0 +1,35 @@
+{
+    "news": [
+      "reuters.com",
+      "bbc.com",
+      "npr.org",
+      "apnews.com",
+      "cnn.com"
+    ],
+    "academic": [
+      "scholar.google.com",
+      "jstor.org",
+      "pubmed.ncbi.nlm.nih.gov",
+      "arxiv.org"
+    ],
+    "government": [
+      ".gov",
+      ".edu"
+    ],
+    "social": [
+      "twitter.com",
+      "linkedin.com",
+      "reddit.com"
+    ],
+    "media": [
+      "youtube.com",
+      "vimeo.com",
+      "soundcloud.com"
+    ],
+    "tech": [
+      "stackoverflow.com",
+      "github.com",
+      "medium.com"
+    ]
+  }
+  

@@ -1,0 +1,35 @@
+{
+    "twitter_dorks": [
+      "site:twitter.com \"{keyword}\"",
+      "site:twitter.com inurl:status \"{keyword}\"",
+      "site:x.com \"{keyword}\"",
+      "\"twitter.com\" \"{keyword}\" -inurl:login",
+      "site:twitter.com \"{keyword}\" filetype:json"
+    ],
+    "youtube_dorks": [
+      "site:youtube.com \"{keyword}\"",
+      "site:youtube.com inurl:watch \"{keyword}\"",
+      "site:youtube.com intitle:\"{keyword}\"",
+      "\"youtube.com/watch\" \"{keyword}\"",
+      "site:youtube.com \"{keyword}\" filetype:json"
+    ],
+    "general_dorks": [
+      "\"{keyword}\" filetype:pdf",
+      "\"{keyword}\" filetype:doc",
+      "\"{keyword}\" filetype:txt",
+      "intitle:\"{keyword}\" site:edu",
+      "intitle:\"{keyword}\" site:gov",
+      "\"{keyword}\" inurl:admin",
+      "\"{keyword}\" intext:\"confidential\"",
+      "\"{keyword}\" cache:"
+    ],
+    "media_dorks": [
+      "\"{keyword}\" filetype:jpg",
+      "\"{keyword}\" filetype:png",
+      "\"{keyword}\" filetype:mp4",
+      "\"{keyword}\" filetype:mp3",
+      "intitle:\"index of\" \"{keyword}\"",
+      "\"{keyword}\" inurl:media"
+    ]
+  }
+  
