@@ -368,7 +368,7 @@ def osint_intelligence():
 @app.route('/neural-graph')
 def neural_graph():
     """Enhanced neural network visualization"""
-    return render_template('enhanced_neural_graph.html')
+    return render_template('neural_graph.html')
 
 @app.route('/api/start-comprehensive-search', methods=['POST'])
 def start_comprehensive_search():
