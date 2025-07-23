@@ -43,3 +43,7 @@ undetected-chromedriver==3.5.4
 pyppeteer==2.0.0
 lxml==4.9.3
 cloudscraper==1.2.71
+
+#Web interface
+flask 
+flask-socketio
