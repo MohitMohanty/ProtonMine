@@ -6,6 +6,7 @@ from urllib.parse import quote_plus, urljoin
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import cloudscraper
+import requests
 from .base_scraper import BaseScraper
 from config.settings import Config
 
@@ -18,6 +19,16 @@ class GoogleDorker(BaseScraper):
         # Load dork queries
         with open(Config.DORK_QUERIES_FILE, 'r') as f:
             self.dork_queries = json.load(f)
+        
+        # Enhanced anti-detection
+        self.session_requests = 0
+        self.max_requests_per_session = 5
+    
+    def rotate_session(self):
+        """Create new session with fresh fingerprint"""
+        self.scraper = cloudscraper.create_scraper()
+        self.session_requests = 0
+        print("🔄 Rotated session to avoid detection")
     
     def generate_dork_query(self, keywords: List[str], dork_type: str = "general") -> List[str]:
         """Generate Google dork queries based on keywords"""
@@ -36,39 +47,85 @@ class GoogleDorker(BaseScraper):
         """Execute Google dork search"""
         results = []
         
-        # Rotate user agent
+        # Rotate session if needed
+        if self.session_requests >= self.max_requests_per_session:
+            self.rotate_session()
+        
+        # Enhanced headers with rotation
         headers = Config.DEFAULT_HEADERS.copy()
         headers['User-Agent'] = self.ua.random
+        
+        # Add random referer sometimes
+        if random.choice([True, False]):
+            headers['Referer'] = random.choice([
+                'https://www.google.com/',
+                'https://duckduckgo.com/',
+                'https://www.bing.com/'
+            ])
         
         # Encode the dork query
         encoded_query = quote_plus(dork_query)
         
-        # Google search URL
-        search_url = f"https://www.google.com/search?q={encoded_query}&num={num_results}"
+        # Use different Google domains randomly
+        google_domains = [
+            'www.google.com',
+            'www.google.co.uk',
+            'www.google.ca',
+            'www.google.com.au'
+        ]
+        
+        domain = random.choice(google_domains)
+        search_url = f"https://{domain}/search?q={encoded_query}&num={min(num_results, 20)}"
         
         try:
-            # Add random delay
-            time.sleep(random.uniform(2, 5))
+            # Use dynamic delay from config
+            delay = Config.get_random_delay()
+            print(f"⏳ Waiting {delay:.1f}s before next request...")
+            time.sleep(delay)
             
             response = self.scraper.get(search_url, headers=headers, timeout=15)
+            
+            # Check for rate limiting
+            if 'sorry/index' in response.url or response.status_code == 429:
+                print("🚫 Rate limited! Waiting longer...")
+                time.sleep(random.uniform(60, 120))  # Wait 1-2 minutes
+                return results
+            
             response.raise_for_status()
+            self.session_requests += 1
             
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # Extract search results
-            for result in soup.find_all('div', class_='g'):
-                title_elem = result.find('h3')
-                link_elem = result.find('a')
-                snippet_elem = result.find('span', class_=['aCOpRe', 'st'])
+            # Extract search results (more robust selectors)
+            result_selectors = [
+                'div.g',
+                'div[data-ved]',
+                '.rc'
+            ]
+            
+            search_results = []
+            for selector in result_selectors:
+                search_results = soup.select(selector)
+                if search_results:
+                    break
+            
+            for result in search_results[:10]:  # Limit results
+                title_elem = result.select_one('h3, .LC20lb')
+                link_elem = result.select_one('a[href]')
+                snippet_elem = result.select_one('.aCOpRe, .st, .VwiC3b')
                 
                 if title_elem and link_elem:
                     href = link_elem.get('href', '')
-                    if href.startswith('/url?q='):
-                        # Clean Google redirect URL
-                        actual_url = href.split('/url?q=')[1].split('&')[0]
-                    else:
-                        actual_url = href
                     
+                    # Clean Google redirect URLs
+                    if href.startswith('/url?q='):
+                        actual_url = href.split('/url?q=')[1].split('&')[0]
+                    elif href.startswith('http'):
+                        actual_url = href
+                    else:
+                        continue
+                    
+                    # Only include trusted domains
                     if self.is_trusted_domain(actual_url):
                         results.append({
                             'url': actual_url,
@@ -79,12 +136,16 @@ class GoogleDorker(BaseScraper):
                         })
         
         except Exception as e:
-            print(f"Error executing dork query '{dork_query}': {e}")
+            print(f"❌ Error executing dork query '{dork_query}': {e}")
+            # If we get blocked, wait even longer
+            if '429' in str(e) or 'sorry' in str(e):
+                print("🛑 Detected as bot. Cooling down...")
+                time.sleep(random.uniform(120, 300))  # Wait 2-5 minutes
         
         return results
     
     def search(self, keywords: List[str], dork_types: List[str] = ["general"]) -> List[Dict]:
-        """Search using multiple dork queries"""
+        """Search using multiple dork queries (implements abstract method)"""
         all_results = []
         
         for dork_type in dork_types:
@@ -110,7 +171,7 @@ class GoogleDorker(BaseScraper):
         return unique_results
     
     def scrape_url(self, url: str) -> Dict:
-        """Scrape content from dorked URL"""
+        """Scrape content from dorked URL (implements abstract method)"""
         try:
             headers = Config.DEFAULT_HEADERS.copy()
             headers['User-Agent'] = self.ua.random
