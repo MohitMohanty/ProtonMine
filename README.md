@@ -64,7 +64,7 @@ A powerful, modern intelligence-gathering and OSINT platform. Features multi-sou
 
 5. _Optionally, run full-stack OSINT CLI:_
     ```
-    python main_osint.py --target indiannavy.gov.in
+    python main_osint.py --target https://thehackernews.com/
     ```
 
 ---
